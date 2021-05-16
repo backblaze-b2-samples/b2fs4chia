@@ -33,8 +33,8 @@ from fuse import FuseOSError, Operations
 from stat import S_IFDIR, S_IFREG
 from time import time
 
-from b2.account_info.in_memory import InMemoryAccountInfo
-from b2.api import B2Api
+from b2sdk.v0 import InMemoryAccountInfo
+from b2sdk.v0 import B2Api
 
 from .filetypes.B2SequentialFileMemory import B2SequentialFileMemory
 from .filetypes.B2FileDisk import B2FileDisk

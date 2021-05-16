@@ -26,7 +26,7 @@
 import os
 import os.path
 
-from b2.download_dest import DownloadDestBytes
+from b2sdk.v0 import DownloadDestBytes
 
 from .B2BaseFile import B2BaseFile
 

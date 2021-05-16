@@ -25,7 +25,7 @@
 
 from time import time
 
-from b2.bucket import Bucket
+from b2sdk.v0 import Bucket
 
 
 #General cache used for B2Bucket

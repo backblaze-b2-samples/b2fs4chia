@@ -48,6 +48,8 @@ def create_parser():
     parser.add_argument('--debug', dest='debug', action='store_true')
     parser.set_defaults(debug=False)
 
+    parser.add_argument('--chia_mode', dest='chia_mode', action='store_true')
+
     parser.add_argument(
         "--account_id",
         type=str,
@@ -85,7 +87,7 @@ def main():
     args = parser.parse_args()
     
     if args.debug:
-        logging.basicConfig(level=logging.INFO, format="%(asctime)s:%(levelname)s:%(message)s")
+        logging.basicConfig(level=logging.DEBUG, format="%(asctime)s:%(levelname)s:%(message)s")
     else:
         logging.basicConfig(level=logging.WARNING, format="%(asctime)s:%(levelname)s:%(message)s")
 
@@ -120,6 +122,10 @@ def main():
 
     if args.allow_other:
         args.options['allow_other'] = True
+
+    chia_mode = args.chia_mode
+
+    assert chia_mode  #  for now, only this mode is supported
 
     with B2Fuse(
         config["accountId"], config["applicationKey"], config["bucketId"],

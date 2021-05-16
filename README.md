@@ -102,6 +102,7 @@ optional arguments:
                         Temporary file folder
   --config_filename CONFIG_FILENAME
                         Config file
+  --chia_mode
 ```
 
 Usage notes:
