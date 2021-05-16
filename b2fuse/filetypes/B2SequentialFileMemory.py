@@ -38,9 +38,10 @@ class B2SequentialFileMemory(B2BaseFile):
             self.data = bytearray()
             self._dirty = True
         else:
-            download_dest = DownloadDestBytes()
-            self.b2fuse.bucket_api.download_file_by_id(self.file_info['fileId'], download_dest)
-            self.data = bytearray(download_dest.get_bytes_written())
+            pass
+            # download_dest = DownloadDestBytes()
+            # self.b2fuse.bucket_api.download_file_by_id(self.file_info['fileId'], download_dest)
+            # self.data = bytearray(download_dest.get_bytes_written())
 
     # def __getitem__(self, key):
     #    if isinstance(key, slice):
@@ -59,7 +60,7 @@ class B2SequentialFileMemory(B2BaseFile):
     #    self.data[key] = value
 
     def __len__(self):
-        return len(self.data)
+        return self.file_info['size']
 
     #def __del__(self):
     #    self.delete()
@@ -76,7 +77,9 @@ class B2SequentialFileMemory(B2BaseFile):
             self.write(offset, data)
 
     def read(self, offset, length):
-        return bytes(self.data[offset:offset + length])
+        download_dest = DownloadDestBytes()
+        self.b2fuse.bucket_api.download_file_by_id(self.file_info['fileId'], download_dest, range_=(offset, length+offset - 1))
+        return download_dest.get_bytes_written()
 
     def truncate(self, length):
         self.data = self.data[:length]
