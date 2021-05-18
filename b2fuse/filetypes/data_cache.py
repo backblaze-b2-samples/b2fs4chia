@@ -79,6 +79,7 @@ class DataCache:
 
             intervals = sorted(self.temp[read_range_start: read_range_end] | self.perm[read_range_start: read_range_end])
             if not intervals:
+                return self._fetch_data(offset, length, True)
                 new_offset, new_length, keep_it = self.aplify_read(offset, length)
                 return self._fetch_data(new_offset, new_length, keep_it)[(offset - new_offset): (offset - new_offset + length)]
 
@@ -89,14 +90,16 @@ class DataCache:
 
             for interval in intervals:
                 # TODO: check for holes and download missing bytes + cache them
-                this_offset = max(read_range_start, interval.begin)
-                this_end = min(read_range_end, interval.end)
-                this_length = this_end - offset
-                logger.info('adding from cache: %s; offset = %s; length = %s' % (
-                    self.b2_file.file_info['fileName'], this_offset, this_length))
-                result.extend(interval.data[this_offset: this_end])
+                # interval_slice_start = max(read_range_start, interval.begin) - read_range_start
+                interval_slice_start = max(read_range_start - interval.begin, 0)
+                interval_slice_end = min(interval.end, read_range_end) - interval.begin
+                # interval_slice_end = min(read_range_end, interval.end) - read_range_start
+                logger.info(f'adding from cache: {self.b2_file.file_info["fileName"]}. \n'
+                            f'Original interval parameters: offset = {interval.begin}; length = {interval.end - interval.begin}\n'
+                            f'Using slice: [{interval_slice_start}: {interval_slice_end}]')
+                result.extend(interval.data[interval_slice_start: interval_slice_end])
 
             if intervals[-1].end < read_range_end:
-                result.extend(self._fetch_data(intervals[-1].end, read_range_end - intervals[-1].end, False))
+                result.extend(self._fetch_data(intervals[-1].end + 1, read_range_end - intervals[-1].end, False))
 
             return bytes(result)
