@@ -46,13 +46,20 @@ from .cached_bucket import CachedBucket
 
 class B2Fuse(Operations):
     def __init__(
-        self, account_id, application_key, bucket_id, enable_hashfiles, temp_folder,
-        use_disk
+        self,
+        account_id,
+        application_key,
+        bucket_id,
+        enable_hashfiles,
+        temp_folder,
+        use_disk,
+        cache_timeout,
+        chia_mode,
     ):
         account_info = InMemoryAccountInfo()
         self.api = B2Api(account_info)
         self.api.authorize_account('production', account_id, application_key)
-        self.bucket_api = CachedBucket(self.api, bucket_id)
+        self.bucket_api = CachedBucket(self.api, bucket_id, cache_timeout)
 
         self.logger = logging.getLogger("%s.%s" % (__name__, self.__class__.__name__))
 
@@ -76,6 +83,7 @@ class B2Fuse(Operations):
         self.open_files = defaultdict(self.B2File)
 
         self.fd = 0
+        self.chia_mode = chia_mode
 
     def __enter__(self):
         return self

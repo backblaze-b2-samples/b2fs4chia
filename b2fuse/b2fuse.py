@@ -73,6 +73,7 @@ def create_parser():
     parser.add_argument("--config_filename", type=str, default="config.yaml", help="Config file")
 
     parser.add_argument('--allow_other', dest='allow_other', action='store_true')
+    parser.add_argument('--cache_timeout', type=int)
     parser.set_defaults(allow_other=False)
 
     return parser
@@ -118,6 +119,11 @@ def main():
     else:
         config["useDisk"] = False
 
+    if args.cache_timeout:
+        config["cacheTimeout"] = args.cache_timeout
+    else:
+        config["cacheTimeout"] = 120
+
     args.options = {} # additional options passed to FUSE
 
     if args.allow_other:
@@ -128,8 +134,14 @@ def main():
     assert chia_mode  #  for now, only this mode is supported
 
     with B2Fuse(
-        config["accountId"], config["applicationKey"], config["bucketId"],
-        config["enableHashfiles"], config["tempFolder"], config["useDisk"]
+        config["accountId"],
+        config["applicationKey"],
+        config["bucketId"],
+        config["enableHashfiles"],
+        config["tempFolder"],
+        config["useDisk"],
+        config["cacheTimeout"],
+        chia_mode,
     ) as filesystem:
         FUSE(filesystem, args.mountpoint, nothreads=True, foreground=True, **args.options)
 

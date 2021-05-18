@@ -54,12 +54,12 @@ class CacheNotFound(BaseException):
 
 
 class CachedBucket(Bucket):
-    def __init__(self, api, bucket_id):
+    def __init__(self, api, bucket_id, timeout=120):
         super(CachedBucket, self).__init__(api, bucket_id)
 
         self._cache = {}
 
-        self._cache_timeout = 120
+        self._cache_timeout = timeout
 
     def _reset_cache(self):
         self._cache = {}
