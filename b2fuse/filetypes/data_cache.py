@@ -50,7 +50,8 @@ class DataCache:
             # harvester is being initialized and we are now touching the precious plot part at the end of the file
             keep_it = True
         elif self.last_offset < offset and length == 12288:
-            # the first read after the first "random" read is actually accurate
+            # the first read after the first high read is actually accurate
+            # TODO: actually usually it's two of them
             pass
         elif length == 12288:
             length += 16384
@@ -69,7 +70,12 @@ class DataCache:
         return offset, length, keep_it
 
     def get(self, offset, length):
-        with self.lock: # chia read pattern is sequental in nature and we don't want to risk it
+        #with self.lock: # chia read pattern is sequental in nature and we don't want to risk cache consistency in one file
+        if 1:  # TODO: install the lock if our understaniding is true
+            #TODO: restructure this into prefetch(offset, length) which will do nothing (but will track what is going on) if cache is warm
+            # returning a list of entries one will use to serve the request (need to glue them maybe, in case we had two consecutive entries
+            # in the cache.
+            # and then _get_data which take the list of data pieces and merge them into a response 
             new_offset, new_length, keep_it = self.aplify_read(offset, length)
             self.data = self._get_data(
                 new_offset,
