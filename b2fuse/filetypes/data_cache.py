@@ -89,7 +89,7 @@ class DataCache:
 
             for interval in intervals:
                 interval_slice_start = max(read_range_start - interval.begin, 0)
-                interval_slice_end = min(interval.end, read_range_end) - interval.begin
+                interval_slice_end = min(interval.end, read_range_end) - interval.begin + 1
                 logger.info(f'adding from cache: {self.b2_file.file_info["fileName"]}. \n'
                             f'Original interval parameters: offset = {interval.begin}; length = {interval.end - interval.begin}\n'
                             f'Using slice: [{interval_slice_start}: {interval_slice_end}]')
