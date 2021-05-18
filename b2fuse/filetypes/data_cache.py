@@ -18,6 +18,7 @@ class DataCache:
 
     def _fetch_data(self, offset, length, keep_it):
         download_dest = DownloadDestBytes()
+        logger.info('downloading from b2: %s; offset = %s; length = %s' % (self.b2_file.file_info['fileName'], offset, length))
         self.b2_file.b2fuse.bucket_api.download_file_by_id(
             self.b2_file.file_info['fileId'],
             download_dest,
@@ -70,6 +71,8 @@ class DataCache:
         return offset, length, keep_it
 
     def get(self, offset, length):
+        logger.info('getting: %s; offset = %s; length = %s' % (
+            self.b2_file.file_info['fileName'], offset, length))
         with self.lock:
             read_range_start = offset
             read_range_end = offset + length - 1
@@ -86,7 +89,12 @@ class DataCache:
 
             for interval in intervals:
                 # TODO: check for holes and download missing bytes + cache them
-                result.extend(interval.data[max(read_range_start, interval.begin): min(read_range_end, interval.end)])
+                this_offset = max(read_range_start, interval.begin)
+                this_end = min(read_range_end, interval.end)
+                this_length = this_end - offset
+                logger.info('adding from cache: %s; offset = %s; length = %s' % (
+                    self.b2_file.file_info['fileName'], this_offset, this_length))
+                result.extend(interval.data[this_offset: this_end])
 
             if intervals[-1].end < read_range_end:
                 result.extend(self._fetch_data(intervals[-1].end, read_range_end - intervals[-1].end, False))
