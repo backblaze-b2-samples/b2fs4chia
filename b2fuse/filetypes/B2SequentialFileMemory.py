@@ -28,10 +28,14 @@ from b2sdk.v0 import DownloadDestBytes
 
 from .B2BaseFile import B2BaseFile
 
+from .data_cache import DataCache
+
 
 class B2SequentialFileMemory(B2BaseFile):
+    DATA_CACHE_CLASS = DataCache
     def __init__(self, b2fuse, file_info, new_file=False):
         super(B2SequentialFileMemory, self).__init__(b2fuse, file_info)
+        self.data_cache = self.DATA_CACHE_CLASS(self)
         
         self._dirty = False
         if new_file:
@@ -77,9 +81,7 @@ class B2SequentialFileMemory(B2BaseFile):
             self.write(offset, data)
 
     def read(self, offset, length):
-        download_dest = DownloadDestBytes()
-        self.b2fuse.bucket_api.download_file_by_id(self.file_info['fileId'], download_dest, range_=(offset, length+offset - 1))
-        return download_dest.get_bytes_written()
+        return self.data_cache.get(offset, length)
 
     def truncate(self, length):
         self.data = self.data[:length]
