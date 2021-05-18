@@ -79,7 +79,6 @@ class DataCache:
 
             intervals = sorted(self.temp[read_range_start: read_range_end] | self.perm[read_range_start: read_range_end])
             if not intervals:
-                return self._fetch_data(offset, length, True)
                 new_offset, new_length, keep_it = self.aplify_read(offset, length)
                 return self._fetch_data(new_offset, new_length, keep_it)[(offset - new_offset): (offset - new_offset + length)]
 
@@ -89,11 +88,8 @@ class DataCache:
                 result.extend(self._fetch_data(read_range_start, intervals[0].begin - read_range_start, False))
 
             for interval in intervals:
-                # TODO: check for holes and download missing bytes + cache them
-                # interval_slice_start = max(read_range_start, interval.begin) - read_range_start
                 interval_slice_start = max(read_range_start - interval.begin, 0)
                 interval_slice_end = min(interval.end, read_range_end) - interval.begin
-                # interval_slice_end = min(read_range_end, interval.end) - read_range_start
                 logger.info(f'adding from cache: {self.b2_file.file_info["fileName"]}. \n'
                             f'Original interval parameters: offset = {interval.begin}; length = {interval.end - interval.begin}\n'
                             f'Using slice: [{interval_slice_start}: {interval_slice_end}]')
