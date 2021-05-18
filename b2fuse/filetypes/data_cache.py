@@ -1,5 +1,6 @@
 import logging
 import threading
+from intervaltree import IntervalTree
 
 from b2sdk.v0 import DownloadDestBytes
 
@@ -10,15 +11,14 @@ class DataCache:
     def __init__(self, b2_file):  # B2BaseFile
         self.b2_file = b2_file
         self.lock = threading.Lock()
-        # TODO: use something smart + maybe a queue for eviction
-        #self.perm = intervaltree()
-        #self.temp = intervaltree()
+        self.perm = IntervalTree()
+        self.temp = IntervalTree()
         self.last_offset = 0
         self.last_length = 0
 
-    def _get_data(self, offset, length, keep_it):
+    def _fetch_data(self, offset, length, keep_it):
         download_dest = DownloadDestBytes()
-        self.b2fuse.bucket_api.download_file_by_id(
+        self.b2_file.b2fuse.bucket_api.download_file_by_id(
             self.b2_file.file_info['fileId'],
             download_dest,
             range_=(
@@ -28,9 +28,9 @@ class DataCache:
         )
         data = download_dest.get_bytes_written()
         if keep_it:
-            self.perm.set(offset, length, data)
+            self.perm[offset: length+offset] = data
         else:
-            self.temp.set(offset, length, data)
+            self.temp[offset: length+offset] = data
         return data
 
     def aplify_read(self, offset, length):
@@ -70,19 +70,25 @@ class DataCache:
         return offset, length, keep_it
 
     def get(self, offset, length):
-        #with self.lock: # chia read pattern is sequental in nature and we don't want to risk cache consistency in one file
-        if 1:  # TODO: install the lock if our understaniding is true
-            #TODO: restructure this into prefetch(offset, length) which will do nothing (but will track what is going on) if cache is warm
-            # returning a list of entries one will use to serve the request (need to glue them maybe, in case we had two consecutive entries
-            # in the cache.
-            # and then _get_data which take the list of data pieces and merge them into a response 
-            new_offset, new_length, keep_it = self.aplify_read(offset, length)
-            self.data = self._get_data(
-                new_offset,
-                new_length,
-                keep_it,
-            )
-            return self._get_data(
-                new_offset,
-                new_length,
-            )
+        with self.lock:
+            read_range_start = offset
+            read_range_end = offset + length - 1
+
+            intervals = sorted(self.temp[read_range_start: read_range_end] | self.perm[read_range_start: read_range_end])
+            if not intervals:
+                new_offset, new_length, keep_it = self.aplify_read(offset, length)
+                return self._fetch_data(new_offset, new_length, keep_it)[(offset - new_offset): (offset - new_offset + length)]
+
+            result = bytearray()
+
+            if intervals[0].begin > read_range_start:
+                result.extend(self._fetch_data(read_range_start, intervals[0].begin - read_range_start, False))
+
+            for interval in intervals:
+                # TODO: check for holes and download missing bytes + cache them
+                result.extend(interval.data[max(read_range_start, interval.begin): min(read_range_end, interval.end)])
+
+            if intervals[-1].end < read_range_end:
+                result.extend(self._fetch_data(intervals[-1].end, read_range_end - intervals[-1].end, False))
+
+            return bytes(result)
