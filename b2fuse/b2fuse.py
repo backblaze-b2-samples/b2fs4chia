@@ -90,7 +90,8 @@ def main():
     if args.debug:
         logging.basicConfig(level=logging.DEBUG, format="%(asctime)s:%(levelname)s:%(message)s")
     else:
-        logging.basicConfig(level=logging.WARNING, format="%(asctime)s:%(levelname)s:%(message)s")
+        #logging.basicConfig(level=logging.WARNING, format="%(asctime)s:%(levelname)s:%(message)s")
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s:%(levelname)s:%(message)s")
 
     if args.config_filename:
         config = load_config(args.config_filename)

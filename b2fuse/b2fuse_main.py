@@ -167,7 +167,7 @@ class B2Fuse(Operations):
     # ==================
 
     def access(self, path, mode):
-        self.logger.debug("Access %s (mode:%s)", path, mode)
+        self.logger.info("Access %s (mode:%s)", path, mode)
         path = self._remove_start_slash(path)
 
         #Return access granted if path is a directory
@@ -187,8 +187,8 @@ class B2Fuse(Operations):
     #    self.logger.debug("Chown %s (uid:%s gid:%s)", path, uid, gid)
 
     def getattr(self, path, fh=None):
-        self.logger.debug("Get attr %s", path)
-        self.logger.debug("Memory used %s", round(self._get_memory_consumption(), 2))
+        #self.logger.debug("Get attr %s", path)
+        #self.logger.debug("Memory used %s", round(self._get_memory_consumption(), 2))
         path = self._remove_start_slash(path)
 
         #Check if path is a directory
@@ -204,6 +204,7 @@ class B2Fuse(Operations):
         #Check if path is a file
         elif self._exists(path):
             #If file exist return attributes
+            #self.logger.info("Get attr %s", path)
 
             online_files = [l[0].file_name for l in self.bucket_api.ls()]
 
@@ -246,7 +247,7 @@ class B2Fuse(Operations):
         raise FuseOSError(errno.ENOENT)
 
     def readdir(self, path, fh):
-        self.logger.debug("Readdir %s", path)
+        self.logger.info("Readdir %s", path)
         path = self._remove_start_slash(path)
 
         self._update_directory_structure()
@@ -444,7 +445,7 @@ class B2Fuse(Operations):
         return self.fd
 
     def read(self, path, length, offset, fh):
-        self.logger.debug("Read %s (len:%s offset:%s fh:%s)", path, length, offset, fh)
+        self.logger.info("Read %s (len:%s offset:%s fh:%s)", path, length, offset, fh)
 
         return self.open_files[self._remove_start_slash(path)].read(offset, length)
 

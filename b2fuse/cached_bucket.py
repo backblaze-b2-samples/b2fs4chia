@@ -23,9 +23,13 @@
 #OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #SOFTWARE.
 
+import logging
+
 from time import time
 
 from b2sdk.v0 import Bucket
+
+logger = logging.getLogger(__name__)
 
 
 #General cache used for B2Bucket
@@ -65,6 +69,7 @@ class CachedBucket(Bucket):
         self._cache = {}
 
     def _update_cache(self, cache_name, result, params=""):
+        logger.info('cache miss: %s, %s', cache_name, str(params))
         self._cache[cache_name].update(result, params)
         return result
 
