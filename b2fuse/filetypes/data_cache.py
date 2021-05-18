@@ -78,9 +78,22 @@ class DataCache:
             read_range_end = offset + length - 1
 
             intervals = sorted(self.temp[read_range_start: read_range_end] | self.perm[read_range_start: read_range_end])
-            if not intervals:
+            if True: #not intervals:
                 new_offset, new_length, keep_it = self.aplify_read(offset, length)
-                return self._fetch_data(new_offset, new_length, keep_it)[(offset - new_offset): (offset - new_offset + length)]
+                # uncomment the line below use smart downloading and saving in cache
+                # return self._fetch_data(new_offset, new_length, keep_it)[(offset - new_offset): (offset - new_offset + length)]
+                download_dest = DownloadDestBytes()
+                logger.info('downloading from b2: %s; offset = %s; length = %s' % (
+                self.b2_file.file_info['fileName'], offset, length))
+                self.b2_file.b2fuse.bucket_api.download_file_by_id(
+                    self.b2_file.file_info['fileId'],
+                    download_dest,
+                    range_=(
+                        offset,
+                        length + offset - 1,
+                    ),
+                )
+                return download_dest.get_bytes_written()
 
             result = bytearray()
 
