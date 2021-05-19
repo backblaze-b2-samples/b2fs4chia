@@ -13,8 +13,6 @@ class DataCache:
         self.lock = threading.Lock()
         self.perm = IntervalTree()
         self.temp = IntervalTree()
-        self.last_offset = 0
-        self.last_length = 0
 
     def _fetch_data(self, offset, length, keep_it):
         download_dest = DownloadDestBytes()
@@ -40,35 +38,15 @@ class DataCache:
         """
         requested_offset = offset
         requested_length = length
-        keep_it = False  # TODO: store that on a cache disk, never evict it
-        if offset > self.last_offset*2 and offset > 128*1024:
-            pass  # TODO: reset cache
-        elif offset == 0 and length == 16384:
-            # header
-            length += 32768
-            keep_it = True
-        elif self.last_offset == 16384 and self.last_length == 32768 and offset != 0 and length == 12288:
-            # harvester is being initialized and we are now touching the precious plot part at the end of the file
-            keep_it = True
-        elif self.last_offset < offset and length == 12288:
-            # the first read after the first high read is actually accurate
-            # TODO: actually usually it's two of them
-            pass
-        elif length == 12288:
-            length += 16384
-        elif length >= 16384:
-            length *= 3
-        else:
-            pass
+
+        length == 16384*3  # KISS
 
         if offset <= requested_offset and length >= (requested_offset-offset+requested_length):
             pass
         else:
             logger.error('messed up offsets %s', locals())
 
-        self.last_offset = requested_offset
-        self.last_length = requested_length
-        return offset, length, keep_it
+        return offset, length
 
     def get(self, offset, length):
         logger.info('getting: %s; offset = %s; length = %s' % (
