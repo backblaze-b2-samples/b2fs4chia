@@ -43,7 +43,7 @@ class DataCache:
         requested_offset = offset
         requested_length = length
 
-        length == 16384*3  # KISS
+        length = 16384*3  # KISS
 
         if offset <= requested_offset and length >= (requested_offset-offset+requested_length):
             pass
