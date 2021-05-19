@@ -63,8 +63,9 @@ class DataCache:
         read_range_end = offset + length - 1
 
         with self.lock:
-            intervals = self.temp[read_range_start: read_range_end] | self.perm[read_range_start: read_range_end]
+            intervals_set = self.temp[read_range_start: read_range_end] | self.perm[read_range_start: read_range_end]
 
+        intervals = list(intervals_set)
         intervals.sort()
 
         if not intervals:
