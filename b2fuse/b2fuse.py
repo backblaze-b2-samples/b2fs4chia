@@ -144,7 +144,7 @@ def main():
         config["cacheTimeout"],
         chia_mode,
     ) as filesystem:
-        FUSE(filesystem, args.mountpoint, nothreads=True, foreground=True, **args.options)
+        FUSE(filesystem, args.mountpoint, nothreads=False, foreground=True, **args.options)
 
 
 if __name__ == '__main__':

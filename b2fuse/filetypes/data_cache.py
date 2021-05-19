@@ -27,9 +27,13 @@ class DataCache:
         )
         data = download_dest.get_bytes_written()
         if keep_it:
-            self.perm[offset: length+offset] = data
+            storage = self.perm
         else:
-            self.temp[offset: length+offset] = data
+            storage = self.temp
+
+        with self.lock:
+            storage[offset: length+offset] = data
+
         return data
 
     def aplify_read(self, offset, length):
@@ -49,31 +53,38 @@ class DataCache:
         return offset, length, offset == 0
 
     def get(self, offset, length):
-        logger.info('getting: %s; offset = %s; length = %s' % (
-            self.b2_file.file_info['fileName'], offset, length))
+        logger.info(
+            'getting: %s; offset = %s; length = %s',
+            self.b2_file.file_info['fileName'],
+            offset,
+            length,
+        )
+        read_range_start = offset
+        read_range_end = offset + length - 1
+
         with self.lock:
-            read_range_start = offset
-            read_range_end = offset + length - 1
+            intervals = self.temp[read_range_start: read_range_end] | self.perm[read_range_start: read_range_end]
 
-            intervals = sorted(self.temp[read_range_start: read_range_end] | self.perm[read_range_start: read_range_end])
-            if not intervals:
-                new_offset, new_length, keep_it = self.aplify_read(offset, length)
-                return self._fetch_data(new_offset, new_length, keep_it)[(offset - new_offset): (offset - new_offset + length)]
+        intervals.sort()
 
-            result = bytearray()
+        if not intervals:
+            new_offset, new_length, keep_it = self.aplify_read(offset, length)
+            return self._fetch_data(new_offset, new_length, keep_it)[(offset - new_offset): (offset - new_offset + length)]
 
-            if intervals[0].begin > read_range_start:
-                result.extend(self._fetch_data(read_range_start, intervals[0].begin - read_range_start, False))
+        result = bytearray()
 
-            for interval in intervals:
-                interval_slice_start = max(read_range_start - interval.begin, 0)
-                interval_slice_end = min(interval.end, read_range_end) - interval.begin + 1
-                logger.info(f'adding from cache: {self.b2_file.file_info["fileName"]}. \n'
-                            f'Original interval parameters: offset = {interval.begin}; length = {interval.end - interval.begin}\n'
-                            f'Using slice: [{interval_slice_start}: {interval_slice_end}]')
-                result.extend(interval.data[interval_slice_start: interval_slice_end])
+        if intervals[0].begin > read_range_start:
+            result.extend(self._fetch_data(read_range_start, intervals[0].begin - read_range_start, False))
 
-            if intervals[-1].end < read_range_end:
-                result.extend(self._fetch_data(intervals[-1].end + 1, read_range_end - intervals[-1].end, False))
+        for interval in intervals:
+            interval_slice_start = max(read_range_start - interval.begin, 0)
+            interval_slice_end = min(interval.end, read_range_end) - interval.begin + 1
+            logger.info(f'adding from cache: {self.b2_file.file_info["fileName"]}. \n'
+                        f'Original interval parameters: offset = {interval.begin}; length = {interval.end - interval.begin}\n'
+                        f'Using slice: [{interval_slice_start}: {interval_slice_end}]')
+            result.extend(interval.data[interval_slice_start: interval_slice_end])
 
-            return bytes(result)
+        if intervals[-1].end < read_range_end:
+            result.extend(self._fetch_data(intervals[-1].end + 1, read_range_end - intervals[-1].end, False))
+
+        return bytes(result)
