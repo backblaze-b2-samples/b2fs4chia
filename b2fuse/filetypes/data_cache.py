@@ -46,7 +46,7 @@ class DataCache:
         else:
             logger.error('messed up offsets %s', locals())
 
-        return offset, length
+        return offset, length, offset == 0
 
     def get(self, offset, length):
         logger.info('getting: %s; offset = %s; length = %s' % (
