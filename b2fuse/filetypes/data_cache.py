@@ -75,6 +75,7 @@ class DataCache:
         result = bytearray()
 
         if intervals[0].begin > read_range_start:
+            logger.info('extending read range start of %s by %s', intervals[0].begin, intervals[0].begin-read_range_start)
             result.extend(self._fetch_data(read_range_start, intervals[0].begin - read_range_start, False))
 
         for interval in intervals:
@@ -86,6 +87,7 @@ class DataCache:
             result.extend(interval.data[interval_slice_start: interval_slice_end])
 
         if intervals[-1].end < read_range_end:
+            logger.info('extending read range end of %s by %s', intervals[0].begin, read_range_end - intervals[-1].end)
             result.extend(self._fetch_data(intervals[-1].end + 1, read_range_end - intervals[-1].end, False))
 
         return bytes(result)
