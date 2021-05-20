@@ -36,19 +36,10 @@ def create_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("mountpoint", type=str, help="Mountpoint for the B2 bucket")
 
-    parser.add_argument('--enable_hashfiles', dest='enable_hashfiles', action='store_true', help="Enable normally hidden hashes as exposed by B2 API")
-    parser.set_defaults(enable_hashfiles=False)
-    
-    parser.add_argument('--version',action='version', version="B2Fuse version 1.3")
+    parser.add_argument('--version', action='version', version="b2fs4chia version 0.1")
 
-    parser.add_argument('--use_disk', dest='use_disk', action='store_true')
-    parser.set_defaults(use_disk=False)
-    
-    
     parser.add_argument('--debug', dest='debug', action='store_true')
     parser.set_defaults(debug=False)
-
-    parser.add_argument('--chia_mode', dest='chia_mode', action='store_true')
 
     parser.add_argument(
         "--account_id",
@@ -69,12 +60,11 @@ def create_parser():
         help="Bucket ID for the bucket to mount (overrides config)"
     )
 
-    parser.add_argument("--temp_folder", type=str, default=".tmp/", help="Temporary file folder")
     parser.add_argument("--config_filename", type=str, default="config.yaml", help="Config file")
 
-    parser.add_argument('--allow_other', dest='allow_other', action='store_true')
-    parser.add_argument('--cache_timeout', type=int)
-    parser.set_defaults(allow_other=False)
+    parser.add_argument('--allow_other', dest='allow_other', action='store_true', help="option passed to FUSE")
+
+    parser.add_argument('--cache_timeout', type=int, help="B2 Bucket cache lifetime")
 
     return parser
 
@@ -90,7 +80,6 @@ def main():
     if args.debug:
         logging.basicConfig(level=logging.DEBUG, format="%(asctime)s:%(levelname)s:%(message)s")
     else:
-        #logging.basicConfig(level=logging.WARNING, format="%(asctime)s:%(levelname)s:%(message)s")
         logging.basicConfig(level=logging.INFO, format="%(asctime)s:%(levelname)s:%(message)s")
 
     if args.config_filename:
@@ -107,44 +96,24 @@ def main():
     if args.bucket_id:
         config["bucketId"] = args.bucket_id
 
-    if args.enable_hashfiles:
-        config["enableHashfiles"] = args.enable_hashfiles
-    else:
-        config["enableHashfiles"] = False
-
-    if args.temp_folder:
-        config["tempFolder"] = args.temp_folder
-
-    if args.use_disk:
-        config["useDisk"] = args.use_disk
-    else:
-        config["useDisk"] = False
-
     if args.cache_timeout:
         config["cacheTimeout"] = args.cache_timeout
     else:
         config["cacheTimeout"] = 120
 
-    args.options = {} # additional options passed to FUSE
+    args.options = {}  # additional options passed to FUSE
 
     if args.allow_other:
         args.options['allow_other'] = True
-
-    chia_mode = args.chia_mode
-
-    assert chia_mode  #  for now, only this mode is supported
 
     with B2Fuse(
         config["accountId"],
         config["applicationKey"],
         config["bucketId"],
-        config["enableHashfiles"],
-        config["tempFolder"],
-        config["useDisk"],
         config["cacheTimeout"],
-        chia_mode,
     ) as filesystem:
-        FUSE(filesystem, args.mountpoint, nothreads=False, foreground=True, entry_timeout=1800, attr_timeout=1800, direct_io=True, kernel_cache=True, **args.options)
+        FUSE(filesystem, args.mountpoint, nothreads=False, foreground=True, entry_timeout=1800, attr_timeout=1800,
+             direct_io=True, kernel_cache=True, **args.options)
 
 
 if __name__ == '__main__':

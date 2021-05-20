@@ -6,13 +6,12 @@ from b2sdk.v0 import DownloadDestBytes
 
 logger = logging.getLogger(__name__)
 
-
 MIN_READ_LEN_WITHOUT_CACHE = 16384
 
 
 class DataCache:
 
-    def __init__(self, b2_file):  # B2BaseFile
+    def __init__(self, b2_file):
         self.b2_file = b2_file
         self.lock = threading.Lock()
         self.perm = IntervalTree()
@@ -20,13 +19,14 @@ class DataCache:
 
     def _fetch_data(self, offset, length, keep_it):
         download_dest = DownloadDestBytes()
-        logger.info('\033[33mdownloading from b2: %s; offset = %s; length = %s\033[0m' % (self.b2_file.file_info['fileName'], offset, length))
+        logger.info('\033[33mdownloading from b2: %s; offset = %s; length = %s\033[0m' % (
+            self.b2_file.file_info['fileName'], offset, length))
         self.b2_file.b2fuse.bucket_api.download_file_by_id(
             self.b2_file.file_info['fileId'],
             download_dest,
             range_=(
                 offset,
-                length+offset - 1,
+                length + offset - 1,
             ),
         )
         data = download_dest.get_bytes_written()
@@ -36,7 +36,7 @@ class DataCache:
             storage = self.temp
 
         with self.lock:
-            storage[offset: length+offset] = data
+            storage[offset: length + offset] = data
 
         return data
 
@@ -68,12 +68,14 @@ class DataCache:
 
         if not intervals:
             new_offset, new_length, keep_it = self.amplify_read(offset, length)
-            return self._fetch_data(new_offset, new_length, keep_it)[(offset - new_offset): (offset - new_offset + length)]
+            return self._fetch_data(new_offset, new_length, keep_it)[
+                   (offset - new_offset): (offset - new_offset + length)]
 
         result = bytearray()
 
         if intervals[0].begin > read_range_start:
-            logger.info('extending read range start of %s by %s', intervals[0].begin, intervals[0].begin-read_range_start)
+            logger.info('extending read range start of %s by %s', intervals[0].begin,
+                        intervals[0].begin - read_range_start)
             result.extend(self._fetch_data(read_range_start, intervals[0].begin - read_range_start, False))
 
         prev_end = None
@@ -86,7 +88,7 @@ class DataCache:
                     result.extend(self._fetch_data(prev_end, interval.begin - prev_end, False))
                 overlap = max(prev_end - interval.begin, 0)
             interval_slice_start = max(read_range_start - interval.begin, 0) + overlap
-            interval_slice_end = min(interval.end, read_range_end) - interval.begin
+            interval_slice_end = min(interval.end, read_range_end) - interval.begin + 1
             logger.info(f'\033[32madding from cache: {self.b2_file.file_info["fileName"]}. \n'
                         f'Original interval parameters: offset = {interval.begin}; length = {interval.end - interval.begin}\n'
                         f'Using slice: [{interval_slice_start}: {interval_slice_end}]\033[0m')

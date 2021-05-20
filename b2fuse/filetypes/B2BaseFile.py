@@ -31,10 +31,10 @@ class B2BaseFile(object):
         self.file_info = file_info
 
     def __len__(self):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def delete(self):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def upload(self):
-        raise NotImplemented()
+        raise NotImplementedError()
