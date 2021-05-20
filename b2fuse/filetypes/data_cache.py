@@ -87,7 +87,7 @@ class DataCache:
                     result.extend(self._fetch_data(prev_end + 1, interval.begin - prev_end + 1, False))
                     #TODO: filling up holes is still WIP
             interval_slice_start = max(read_range_start - interval.begin, 0)
-            interval_slice_end = min(interval.end, read_range_end) - interval.begin + 1
+            interval_slice_end = min(interval.end, read_range_end) - interval.begin
             logger.info(f'\033[32madding from cache: {self.b2_file.file_info["fileName"]}. \n'
                         f'Original interval parameters: offset = {interval.begin}; length = {interval.end - interval.begin}\n'
                         f'Using slice: [{interval_slice_start}: {interval_slice_end}]\033[0m')
@@ -96,7 +96,7 @@ class DataCache:
             result.extend(interval.data[interval_slice_start: interval_slice_end])
 
         if intervals[-1].end < read_range_end:
-            logger.info('extending read range end of %s by %s', intervals[-1].begin, read_range_end - intervals[-1].end)
-            result.extend(self._fetch_data(intervals[-1].end + 1, read_range_end - intervals[-1].end, False))
+            logger.info('extending read range end of %s by %s', intervals[-1].end, read_range_end - intervals[-1].end)
+            result.extend(self._fetch_data(intervals[-1].end, read_range_end - intervals[-1].end, False))
 
         return bytes(result)
