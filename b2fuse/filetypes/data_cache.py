@@ -7,6 +7,9 @@ from b2sdk.v0 import DownloadDestBytes
 logger = logging.getLogger(__name__)
 
 
+MIN_READ_LEN_WITHOUT_CACHE = 16384
+
+
 class DataCache:
 
     def __init__(self, b2_file):  # B2BaseFile
@@ -37,19 +40,13 @@ class DataCache:
 
         return data
 
-    def aplify_read(self, offset, length):
+    def amplify_read(self, offset, length):
         """
         return new_offset <= offset and length >= offset-new_offset+length
         """
-        requested_offset = offset
         requested_length = length
 
-        length = max(16384, requested_length)  # KISS
-
-        if offset <= requested_offset and length >= (requested_offset-offset+requested_length):
-            pass
-        else:
-            logger.error('\033[31mmessed up offsets %s\033[0m', locals())
+        length = max(MIN_READ_LEN_WITHOUT_CACHE, requested_length)
 
         return offset, length, offset == 0
 
@@ -70,7 +67,7 @@ class DataCache:
         intervals.sort()
 
         if not intervals:
-            new_offset, new_length, keep_it = self.aplify_read(offset, length)
+            new_offset, new_length, keep_it = self.amplify_read(offset, length)
             return self._fetch_data(new_offset, new_length, keep_it)[(offset - new_offset): (offset - new_offset + length)]
 
         result = bytearray()
@@ -80,13 +77,15 @@ class DataCache:
             result.extend(self._fetch_data(read_range_start, intervals[0].begin - read_range_start, False))
 
         prev_end = None
+        overlap = 0
         for interval in intervals:
             if prev_end:
-                if interval.begin != prev_end:
+
+                if interval.begin > prev_end:
                     logger.info('filling up a hole')
-                    result.extend(self._fetch_data(prev_end + 1, interval.begin - prev_end + 1, False))
-                    #TODO: filling up holes is still WIP
-            interval_slice_start = max(read_range_start - interval.begin, 0)
+                    result.extend(self._fetch_data(prev_end, interval.begin - prev_end, False))
+                overlap = max(prev_end - interval.begin, 0)
+            interval_slice_start = max(read_range_start - interval.begin, 0) + overlap
             interval_slice_end = min(interval.end, read_range_end) - interval.begin
             logger.info(f'\033[32madding from cache: {self.b2_file.file_info["fileName"]}. \n'
                         f'Original interval parameters: offset = {interval.begin}; length = {interval.end - interval.begin}\n'
@@ -95,8 +94,9 @@ class DataCache:
             prev_end = interval.end
             result.extend(interval.data[interval_slice_start: interval_slice_end])
 
-        if intervals[-1].end < read_range_end:
-            logger.info('extending read range end of %s by %s', intervals[-1].end, read_range_end - intervals[-1].end)
-            result.extend(self._fetch_data(intervals[-1].end, read_range_end - intervals[-1].end, False))
+        result_len = len(result)
+        if result_len < length:
+            logger.info('extending read range end of %s by %s', result_len + offset, length - result_len)
+            result.extend(self._fetch_data(result_len + offset, length - result_len, False))
 
         return bytes(result)
