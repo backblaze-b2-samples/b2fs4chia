@@ -34,7 +34,7 @@ from stat import S_IFDIR, S_IFREG
 from time import time
 
 from b2sdk.v0 import InMemoryAccountInfo
-from b2sdk.v0 import B2Api
+from b2sdk.v0 import B2Api, B2RawApi, B2Http
 
 from .filetypes.B2SequentialFileMemory import B2SequentialFileMemory
 from .filetypes.B2FileDisk import B2FileDisk
@@ -57,7 +57,7 @@ class B2Fuse(Operations):
         chia_mode,
     ):
         account_info = InMemoryAccountInfo()
-        self.api = B2Api(account_info)
+        self.api = B2Api(account_info, raw_api=B2RawApi(B2Http(user_agent_append='b2fs4chia')))
         self.api.authorize_account('production', account_id, application_key)
         self.bucket_api = CachedBucket(self.api, bucket_id, cache_timeout)
 
@@ -154,9 +154,6 @@ class B2Fuse(Operations):
         elif delete_online:
             file_info = self._directories.get_file_info(path)
             self.bucket_api.delete_file_version(file_info['fileId'], file_info['fileName'])
-#{'size': 19, 'action': u'upload', 'uploadTimestamp': 1477072704000, 'fileName': u'.goutputstream-J5ZNPY', 'fileId': u'4_z4a4089f903fbc1d150640114_f104e0f44e7832f51_d20161021_m175824_c001_v0001033_t0031'}
-
-#{u'contentType': u'application/octet-stream', u'contentSha1': u'a67ce81bd43149c12151e0a6cf1f40bc8571dfd7', u'contentLength': 19, u'fileName': u'.goutputstream-J5ZNPY', u'action': u'upload', u'fileInfo': {}, u'size': 19, u'uploadTimestamp': 1477072704000, u'fileId': u'4_z4a4089f903fbc1d150640114_f104e0f44e7832f51_d20161021_m175824_c001_v0001033_t0031'}
 
     def _remove_start_slash(self, path):
         if path.startswith("/"):
