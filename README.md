@@ -15,7 +15,7 @@ The real issue with harvesting Chia plots in the cloud is _full proof_, which is
 Those 7+64 seeks, in Chia 1.1.5, happen sequentially, which with variable latency can lead to enormous _full proof_ durations (>1min/proof is not unheard of)
 
 
-## Factors impacing speed
+## Factors impacting speed
 
 ### cache
 
@@ -57,6 +57,19 @@ pip3 install .
 ```
 Optionally you can use a `venv` to install *b2fs4chia* separately from other python packages.
 
+
+### Installation of chia-blockchain
+
+```
+pip3 install chia-blockchain==1.1.5
+```
+
+if this fails try
+
+```
+pip3 install pip --upgrade
+```
+
 ### Installation of modified chiapos
 
 ```
@@ -65,7 +78,6 @@ cd chiapos
 git fetch origin pull/239/head:pr239
 git checkout 1.0.1
 git cherry-pick pr239
-sudo apt-get install cmake
 pip3 install .  # this step requires cmake > 3.14.0 and python3 headers (sudo apt-get install python3-dev on debian-like distros)
 ```
 
