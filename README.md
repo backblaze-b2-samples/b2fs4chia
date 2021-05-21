@@ -63,8 +63,10 @@ Optionally you can use a `venv` to install *b2fs4chia* separately from other pyt
 git clone git@github.com:Chia-Network/chiapos.git
 cd chiapos
 git fetch origin pull/239/head:pr239
-git checkout pr239  # should be at 6cd64c4ddcf1962ee079a4a89d07c41d50f2d4bc
-pip3 install .
+git checkout 1.0.1
+git cherry-pick pr239
+sudo apt-get install cmake
+pip3 install .  # this step requires cmake > 3.14.0 and python3 headers (sudo apt-get install python3-dev on debian-like distros)
 ```
 
 ## Configuration
@@ -83,14 +85,15 @@ to get `bucketId` you can use `b2 get-bucket <bucketname>` from B2 command line 
 
 ```
 mkdir /tmp/fuse
-b2fuse /tmp/fuse --cache_timeout 3600
+b2fs4chia /tmp/fuse --cache_timeout 3600
 ```
 
 ### Testing
 
 ```
-chia plots add /tmp/fuse
-time chia plots check -n 5 -g "FULL-PLOT-FILE-NAME.plot"
+chia init  # this is only required when running chia for the first time. Output may conatain other commands to perform
+chia plots add -d /tmp/fuse
+time chia plots check -n 5 -g "FULL-PLOT-FILE-NAME.plot"  # just the name, not the path
 ```
 note the number of proofs and the time it took to fetch them
 
