@@ -58,27 +58,52 @@ pip3 install .
 Optionally you can use a `venv` to install *b2fs4chia* separately from other python packages.
 
 
-### Installation of chia-blockchain
+### Installation of chia-blockchain and modified chiapos
+
+#### Start with a virtualenv
 
 ```
-pip3 install chia-blockchain==1.1.5
+sudo apt-get install python3-venv
+python3 -m venv ~/chia
+source ~/chia/bin/activate
+```
+
+install a released version of chia-blockchain
+
+```
+pip install chia-blockchain==1.1.5
 ```
 
 if this fails try
 
 ```
-pip3 install pip --upgrade
+pip install pip --upgrade
 ```
 
-### Installation of modified chiapos
+#### Installation of modified chiapos
+
+First, remove `chiapos` installed by `chia-blockchain`:
 
 ```
-git clone git@github.com:Chia-Network/chiapos.git
+pip uninstall chiapos
+```
+
+You can make sure that worked by doing:
+```
+python -c 'import chiapos'
+```
+
+You should get a `ModuleNotFound` error.
+
+Next, checkout `chiapos` repo and install a patched version of it.
+
+```
+git clone https://github.com/Chia-Network/chiapos.git
 cd chiapos
 git fetch origin pull/239/head:pr239
 git checkout 1.0.1
 git cherry-pick pr239
-pip3 install .  # this step requires cmake > 3.14.0 and python3 headers (sudo apt-get install python3-dev on debian-like distros)
+python setup.py develop  # this step requires cmake > 3.14.0 and python3 headers (sudo apt-get install python3-dev on debian-like distros)
 ```
 
 ## Configuration
@@ -101,6 +126,12 @@ b2fs4chia /tmp/fuse --cache_timeout 3600
 ```
 
 ### Testing
+
+All commands related to chia have to be run from within the venv created a few steps above. To activate it in a new tab/session:
+
+```
+source ~/chia/bin/activate
+```
 
 ```
 chia init  # this is only required when running chia for the first time. Output may conatain other commands to perform
