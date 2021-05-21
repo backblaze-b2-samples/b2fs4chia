@@ -8,19 +8,19 @@ def read(fname):
 
 
 setup(
-    name='b2fuse',
-    version=1.3,
+    name='b2fs4chia',
+    version=0.1.4,
     description="FUSE integration for Backblaze B2 Cloud storage",
     long_description=read('README.md'),
     classifiers=[
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5  ',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
     ],
     keywords='',
-    author='Sondre Engebraaten',
+    author='Backblaze',
     packages=find_packages(),
     install_requires=['b2==1.1.0', 'fusepy==2.0.4', 'PyYAML==5.1'],
     include_package_data=True,

@@ -92,9 +92,7 @@ class CachedBucket(Bucket):
             return self._update_cache(func_name, result)
 
     def delete_file_version(self, *args, **kwargs):
-        self._reset_cache()
-        return super(CachedBucket, self).delete_file_version(*args, **kwargs)
+        raise NotImplementedError
 
     def upload_bytes(self, *args, **kwargs):
-        self._reset_cache()
-        return super(CachedBucket, self).upload_bytes(*args, **kwargs)
+        raise NotImplementedError

@@ -1,27 +1,27 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#The MIT License (MIT)
+# The MIT License (MIT)
 
-#Copyright (c) 2015 Sondre Engebraaten
+# Copyright (c) 2015 Sondre Engebraaten
 
-#Permission is hereby granted, free of charge, to any person obtaining a copy
-#of this software and associated documentation files (the "Software"), to deal
-#in the Software without restriction, including without limitation the rights
-#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-#copies of the Software, and to permit persons to whom the Software is
-#furnished to do so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 
-#The above copyright notice and this permission notice shall be included in all
-#copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
 
-#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-#SOFTWARE.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
 import os
 import errno
@@ -34,48 +34,29 @@ from stat import S_IFDIR, S_IFREG
 from time import time
 
 from b2sdk.v0 import InMemoryAccountInfo
-from b2sdk.v0 import B2Api
+from b2sdk.v0 import B2Api, B2RawApi, B2Http
 
 from .filetypes.B2SequentialFileMemory import B2SequentialFileMemory
-from .filetypes.B2FileDisk import B2FileDisk
-from .filetypes.B2HashFile import B2HashFile
 from .directory_structure import DirectoryStructure
 from .cached_bucket import CachedBucket
 
 
-
 class B2Fuse(Operations):
     def __init__(
-        self,
-        account_id,
-        application_key,
-        bucket_id,
-        enable_hashfiles,
-        temp_folder,
-        use_disk,
-        cache_timeout,
-        chia_mode,
+            self,
+            account_id,
+            application_key,
+            bucket_id,
+            cache_timeout,
     ):
         account_info = InMemoryAccountInfo()
-        self.api = B2Api(account_info)
+        self.api = B2Api(account_info, raw_api=B2RawApi(B2Http(user_agent_append='b2fs4chia')))
         self.api.authorize_account('production', account_id, application_key)
         self.bucket_api = CachedBucket(self.api, bucket_id, cache_timeout)
 
         self.logger = logging.getLogger("%s.%s" % (__name__, self.__class__.__name__))
 
-        self.enable_hashfiles = enable_hashfiles
-        self.temp_folder = temp_folder
-        self.use_disk = use_disk
-
-        if self.use_disk:
-            if os.path.exists(self.temp_folder):
-                self.logger.error("Temporary folder exists, exiting")
-                exit(1)
-
-            os.makedirs(self.temp_folder)
-            self.B2File = B2FileDisk
-        else:
-            self.B2File = B2SequentialFileMemory
+        self.B2File = B2SequentialFileMemory
 
         self._directories = DirectoryStructure()
         self.local_directories = []
@@ -83,30 +64,26 @@ class B2Fuse(Operations):
         self.open_files = defaultdict(self.B2File)
 
         self.fd = 0
-        self.chia_mode = chia_mode
 
     def __enter__(self):
         return self
 
     def __exit__(self, *args, **kwargs):
-        if os.path.exists(self.temp_folder):
-            shutil.rmtree(self.temp_folder)
-
         return
 
     # Helper methods
     # ==================
 
     def _exists(self, path, include_hash=True):
-        #Handle hash files
+        # Handle hash files
         if include_hash and path.endswith(".sha1"):
             path = path[:-5]
 
-        #File is in bucket
+        # File is in bucket
         if self._directories.is_file(path):
             return True
 
-        #File is open (but possibly not in bucket)
+        # File is open (but possibly not in bucket)
         if path in self.open_files.keys():
             return True
 
@@ -135,7 +112,7 @@ class B2Fuse(Operations):
         return space_consumption
 
     def _update_directory_structure(self):
-        #Update the directory structure with online files and local directories
+        # Update the directory structure with online files and local directories
         def build_file_info_dict(file_info_object):
             file_info = file_info_object.as_dict()
             file_info["contentSha1"] = file_info_object.content_sha1
@@ -154,9 +131,6 @@ class B2Fuse(Operations):
         elif delete_online:
             file_info = self._directories.get_file_info(path)
             self.bucket_api.delete_file_version(file_info['fileId'], file_info['fileName'])
-#{'size': 19, 'action': u'upload', 'uploadTimestamp': 1477072704000, 'fileName': u'.goutputstream-J5ZNPY', 'fileId': u'4_z4a4089f903fbc1d150640114_f104e0f44e7832f51_d20161021_m175824_c001_v0001033_t0031'}
-
-#{u'contentType': u'application/octet-stream', u'contentSha1': u'a67ce81bd43149c12151e0a6cf1f40bc8571dfd7', u'contentLength': 19, u'fileName': u'.goutputstream-J5ZNPY', u'action': u'upload', u'fileInfo': {}, u'size': 19, u'uploadTimestamp': 1477072704000, u'fileId': u'4_z4a4089f903fbc1d150640114_f104e0f44e7832f51_d20161021_m175824_c001_v0001033_t0031'}
 
     def _remove_start_slash(self, path):
         if path.startswith("/"):
@@ -170,28 +144,28 @@ class B2Fuse(Operations):
         self.logger.info("Access %s (mode:%s)", path, mode)
         path = self._remove_start_slash(path)
 
-        #Return access granted if path is a directory
+        # Return access granted if path is a directory
         if self._directories.is_directory(path):
             return
 
-        #Return access granted if path is a file
+        # Return access granted if path is a file
         if self._exists(path):
             return
 
         raise FuseOSError(errno.EACCES)
 
-    #def chmod(self, path, mode):
+    # def chmod(self, path, mode):
     #    self.logger.debug("Chmod %s (mode:%s)", path, mode)
 
-    #def chown(self, path, uid, gid):
+    # def chown(self, path, uid, gid):
     #    self.logger.debug("Chown %s (uid:%s gid:%s)", path, uid, gid)
 
     def getattr(self, path, fh=None):
-        #self.logger.debug("Get attr %s", path)
-        #self.logger.debug("Memory used %s", round(self._get_memory_consumption(), 2))
+        # self.logger.debug("Get attr %s", path)
+        # self.logger.debug("Memory used %s", round(self._get_memory_consumption(), 2))
         path = self._remove_start_slash(path)
 
-        #Check if path is a directory
+        # Check if path is a directory
         if self._directories.is_directory(path):
             return dict(
                 st_mode=(S_IFDIR | 0o777),
@@ -201,18 +175,18 @@ class B2Fuse(Operations):
                 st_nlink=2
             )
 
-        #Check if path is a file
+        # Check if path is a file
         elif self._exists(path):
-            #If file exist return attributes
-            #self.logger.info("Get attr %s", path)
+            # If file exist return attributes
+            # self.logger.info("Get attr %s", path)
 
             online_files = [l[0].file_name for l in self.bucket_api.ls()]
 
             if path in online_files:
-                #print "File is in bucket"
+                # print "File is in bucket"
                 file_info = self._directories.get_file_info(path)
 
-                seconds_since_jan1_1970 = int(file_info['uploadTimestamp']/1000.)
+                seconds_since_jan1_1970 = int(file_info['uploadTimestamp'] / 1000.)
                 return dict(
                     st_mode=(S_IFREG | 0o777),
                     st_ctime=seconds_since_jan1_1970,
@@ -221,20 +195,8 @@ class B2Fuse(Operations):
                     st_nlink=1,
                     st_size=file_info['size']
                 )
-
-            elif path.endswith(".sha1"):
-                #print "File is just a hash"
-                return dict(
-                    st_mode=(S_IFREG | 0o444),
-                    st_ctime=0,
-                    st_mtime=0,
-                    st_atime=0,
-                    st_nlink=1,
-                    st_size=42
-                )
-
             else:
-                #print "File exists only locally"
+                # print "File exists only locally"
                 return dict(
                     st_mode=(S_IFREG | 0o777),
                     st_ctime=0,
@@ -266,38 +228,29 @@ class B2Fuse(Operations):
 
             return False
 
-        #Add files found in bucket
+        # Add files found in bucket
         directory = self._directories.get_directory(path)
 
         online_files = map(lambda file_info: file_info['fileName'], directory.get_file_infos())
         dirents.extend(online_files)
 
-        #Add files kept in local memory
+        # Add files kept in local memory
         for filename in self.open_files.keys():
-            #File already listed
+            # File already listed
             if filename in dirents:
                 continue
 
-            #File is not in current folder
+            # File is not in current folder
             if not in_folder(filename):
-                continue
-
-            #File is a virtual hashfile
-            if filename.endswith(".sha1"):
                 continue
 
             dirents.append(filename)
 
-        #If filenames has a prefix (relative to path) remove this
+        # If filenames has a prefix (relative to path) remove this
         if len(path) > 0:
             dirents = list(map(lambda f: f[len(path) + 1:], dirents))
 
-        #Add hash files
-        if self.enable_hashfiles:
-            hashes = [name + ".sha1" for name in dirents]
-            dirents.extend(hashes)
-
-        #Add directories
+        # Add directories
         dirents.extend(['.', '..'])
         dirents.extend(
             [
@@ -308,63 +261,16 @@ class B2Fuse(Operations):
         return dirents
 
     def rmdir(self, path):
-        self.logger.debug("Rmdir %s", path)
-        path = self._remove_start_slash(path)
-
-        def in_folder(filename):
-            if filename.startswith(path) and filename[len(path):len(path)+1] == "/":
-                relative_filename = self._remove_start_slash(filename[len(path):])
-
-                if "/" not in relative_filename:
-                    return True
-
-            return False
-
-        #Add files found in bucket
-        online_files = [l[0].file_name for l in self.bucket_api.ls()]
-        dirents = filter(in_folder, online_files)
-
-        #Add files kept in local memory
-        for filename in self.open_files.keys():
-            #File already listed
-            if filename in dirents:
-                continue
-
-            #File is not in current folder
-            if not in_folder(filename):
-                continue
-
-            #File is a virtual hashfile
-            if filename.endswith(".sha1"):
-                continue
-
-            dirents.append(filename)
-
-        for filename in dirents:
-            online_files = [(l[0].file_name, l[0].id_) for l in self.bucket_api.ls()]
-            fileName_to_fileId = dict(online_files)
-            self.api.delete_file_version(fileName_to_fileId[path], path)
-
-            self._remove_local_file(filename)
-
-        if self._directories.is_directory(path):
-            if path in self.local_directories:
-                i = self.local_directories.index(path)
-                self.local_directories.pop(i)
+        raise NotImplementedError
 
     def mkdir(self, path, mode):
-        self.logger.debug("Mkdir %s (mode:%s)", path, mode)
-        path = self._remove_start_slash(path)
-
-        self.local_directories.append(path)
-
-        self._update_directory_structure()
+        raise NotImplementedError
 
     def statfs(self, path):
         self.logger.debug("Fetching file system stats %s", path)
-        #Returns 1 petabyte free space, arbitrary number
+        # Returns 1 petabyte free space, arbitrary number
         block_size = 4096 * 16
-        total_block_count = 1024**4  #1 Petabyte
+        total_block_count = 1024 ** 4  # 1 Petabyte
         free_block_count = total_block_count - self._get_cloud_space_consumption() // block_size
         return dict(
             f_bsize=block_size,
@@ -374,41 +280,13 @@ class B2Fuse(Operations):
         )
 
     def unlink(self, path):
-        self.logger.debug("Unlink %s", path)
-        path = self._remove_start_slash(path)
-
-        if not self._exists(path, include_hash=False):
-            return
-
-        self._remove_local_file(path)
-
-        self._update_directory_structure()
+        raise NotImplementedError
 
     def rename(self, old, new):
-        self.logger.debug("Rename old: %s, new %s", old, new)
-
-        old = self._remove_start_slash(old)
-        new = self._remove_start_slash(new)
-
-        if not self._exists(old):
-            raise FuseOSError(errno.ENOENT)
-
-        if self._exists(new):
-            self.unlink(new)
-
-        self.open(old, 0)
-        file_size = len(self.open_files[old])
-        data = self.open_files[old].read(0, file_size)
-        self.release(old, 0)
-
-        self.create(new, 0)
-        self.write(new, data, 0, 0)
-        self.release(new, 0)
-
-        self.unlink(old)
+        raise NotImplementedError
 
     def utimens(self, path, times=None):
-        self.logger.debug("Utimens %s", path)
+        raise NotImplementedError
 
     # File methods
     # ============
@@ -420,10 +298,6 @@ class B2Fuse(Operations):
         if not self._exists(path):
             raise FuseOSError(errno.EACCES)
 
-        if path.endswith(".sha1"):
-            file_info = self._directories.get_file_info(path[:-5])
-            self.open_files[path] = B2HashFile(self, file_info)
-
         elif self.open_files.get(path) is None:
             file_info = self._directories.get_file_info(path)
             self.open_files[path] = self.B2File(self, file_info)
@@ -432,17 +306,7 @@ class B2Fuse(Operations):
         return self.fd
 
     def create(self, path, mode, fi=None):
-        self.logger.debug("Create %s (mode:%s)", path, mode)
-
-        path = self._remove_start_slash(path)
-
-        file_info = {}
-        file_info['fileName'] = path
-
-        self.open_files[path] = self.B2File(self, file_info, True)
-
-        self.fd += 1
-        return self.fd
+        raise NotImplementedError
 
     def read(self, path, length, offset, fh):
         self.logger.info("Read %s (len:%s offset:%s fh:%s)", path, length, offset, fh)
@@ -450,26 +314,15 @@ class B2Fuse(Operations):
         return self.open_files[self._remove_start_slash(path)].read(offset, length)
 
     def write(self, path, data, offset, fh):
-        path = self._remove_start_slash(path)
-
-        self.open_files[path].set_dirty(True)
-        self.open_files[path].write(offset, data)
-
-        return len(data)
+        raise NotImplementedError
 
     def truncate(self, path, length, fh=None):
-        self.logger.debug("Truncate %s (%s)", path, length)
-
-        path = self._remove_start_slash(path)
-        self.open_files[path].set_dirty(True)
-        self.open_files[path].truncate(length)
-
-    def flush(self, path, fh):
-        self.logger.debug("Flush %s %s", path, fh)
-
-        self.open_files[self._remove_start_slash(path)].upload()
+        raise NotImplementedError
 
     def release(self, path, fh):
+        raise NotImplementedError
+
+    def release(self, path, fh):  # TODO: see if this should be removed
         self.logger.debug("Release %s %s", path, fh)
 
         self.logger.debug("Flushing file in case it was dirty")
