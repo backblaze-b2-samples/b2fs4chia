@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 from setuptools import setup, find_packages
 
@@ -9,7 +8,7 @@ def read(fname):
 
 setup(
     name='b2fs4chia',
-    version=0.1.4,
+    version='0.1.4',
     description="FUSE integration for Backblaze B2 Cloud storage",
     long_description=read('README.md'),
     classifiers=[
@@ -26,6 +25,6 @@ setup(
     include_package_data=True,
     zip_safe=True,
     entry_points={
-        'console_scripts': ['b2fuse = b2fuse.b2fuse:main',],
+        'console_scripts': ['b2fs4chia = b2fuse.b2fuse:main',],
     }
 )
