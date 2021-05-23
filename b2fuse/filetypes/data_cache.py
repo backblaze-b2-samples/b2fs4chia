@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 import logging
+import time
 import threading
 from intervaltree import IntervalTree
 
@@ -38,11 +39,12 @@ class DataCache:
         self.lock = threading.Lock()
         self.perm = IntervalTree()
         self.temp = IntervalTree()
+        self.parallel_counter = 0
 
     def _fetch_data(self, offset, length, keep_it):
         download_dest = DownloadDestBytes()
-        logger.info('\033[33mdownloading from b2: %s; offset = %s; length = %s\033[0m' % (
-            self.b2_file.file_info['fileName'], offset, length))
+        self.parallel_counter += 1
+        start = time.time()
         self.b2_file.b2fuse.bucket_api.download_file_by_id(
             self.b2_file.file_info['fileId'],
             download_dest,
@@ -52,6 +54,10 @@ class DataCache:
             ),
         )
         data = download_dest.get_bytes_written()
+        end = time.time()
+        logger.info('\033[33mdownloading from b2: %s; offset = %s; length = %s; time=\033[0m%f, thr=%i' % (self.b2_file.file_info['fileName'], offset, length, end-start, self.parallel_counter))
+        self.parallel_counter -= 1
+
         if keep_it:
             storage = self.perm
         else:
