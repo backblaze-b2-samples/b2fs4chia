@@ -21,15 +21,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import os
 import errno
 import logging
-import shutil
+import threading
 
 from collections import defaultdict
 from fuse import FuseOSError, Operations
 from stat import S_IFDIR, S_IFREG
-from time import time
+from time import time, sleep
+from typing import Set
 
 from b2sdk.v0 import InMemoryAccountInfo
 from b2sdk.v0 import B2Api, B2RawApi, B2Http
@@ -60,8 +60,26 @@ class B2Fuse(Operations):
         self.local_directories = []
 
         self.open_files = defaultdict(self.B2File)
+        self.files_open_since_last_eviction: Set[str] = set()
+        self.files_to_revisit_during_next_eviction: Set[str] = set()
+        self.recently_open_files_lock = threading.Lock()
 
         self.fd = 0
+        threading.Thread(target=self.evict_periodically).start()
+
+    def evict_periodically(self):
+        while True:
+            sleep(30)
+            with self.recently_open_files_lock:
+                files_to_evict = self.files_open_since_last_eviction | self.files_to_revisit_during_next_eviction
+                self.files_to_revisit_during_next_eviction = self.files_open_since_last_eviction
+                self.files_open_since_last_eviction = set()
+            evict_older_than = time() - 30
+            for file_name in files_to_evict:
+                try:
+                    self.open_files[file_name].evict(evict_older_than)
+                except Exception:
+                    self.logger.exception(f'Error when performing eviction for file {file_name}')
 
     def __enter__(self):
         return self
@@ -308,8 +326,10 @@ class B2Fuse(Operations):
 
     def read(self, path, length, offset, fh):
         self.logger.info("Read %s (len:%s offset:%s fh:%s)", path, length, offset, fh)
-
-        return self.open_files[self._remove_start_slash(path)].read(offset, length)
+        file_name = self._remove_start_slash(path)
+        with self.recently_open_files_lock:
+            self.files_open_since_last_eviction.add(file_name)
+        return self.open_files[file_name].read(offset, length)
 
     def write(self, path, data, offset, fh):
         raise NotImplementedError
