@@ -44,3 +44,6 @@ class B2SequentialFileMemory(B2BaseFile):
 
     def set_dirty(self, new_value):
         self._dirty = new_value
+
+    def evict(self, older_than_timestamp: float):
+        self.data_cache.evict(older_than_timestamp)

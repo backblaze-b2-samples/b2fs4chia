@@ -23,9 +23,10 @@
 import logging
 import time
 import threading
-from intervaltree import IntervalTree
+from .evicted_interval_tree import EvictedIntervalTree
 
 from b2sdk.v0 import DownloadDestBytes
+from intervaltree import IntervalTree
 
 logger = logging.getLogger(__name__)
 
@@ -35,10 +36,12 @@ MIN_READ_LEN_WITHOUT_CACHE = 16384
 class DataCache:
 
     def __init__(self, b2_file):
+        self.last_eviction = 0
+        self.eviction_interval = 10
         self.b2_file = b2_file
         self.lock = threading.Lock()
         self.perm = IntervalTree()
-        self.temp = IntervalTree()
+        self.temp = EvictedIntervalTree()
         self.parallel_counter = 0
 
     def _fetch_data(self, offset, length, keep_it):
@@ -58,14 +61,11 @@ class DataCache:
         logger.info('\033[33mdownloading from b2: %s; offset = %s; length = %s; time=\033[0m%f, thr=%i' % (self.b2_file.file_info['fileName'], offset, length, end-start, self.parallel_counter))
         self.parallel_counter -= 1
 
-        if keep_it:
-            storage = self.perm
-        else:
-            storage = self.temp
-
         with self.lock:
-            storage[offset: length + offset] = data
-
+            if keep_it:
+                self.perm[offset: length + offset] = data
+            else:
+                self.temp.add_and_remember(offset, length + offset, data, start)
         return data
 
     def amplify_read(self, offset, length):
@@ -130,3 +130,7 @@ class DataCache:
             result.extend(self._fetch_data(result_len + offset, length - result_len, False))
 
         return bytes(result)
+
+    def evict(self, older_than_timestamp: float):
+        with self.lock:
+            self.temp.evict(older_than_timestamp)
