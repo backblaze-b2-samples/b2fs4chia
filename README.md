@@ -1,16 +1,16 @@
 # b2fs4chia - FUSE for Backblaze B2 optimized for Chia
  
-*WARNING*: this is an _experimental_ version. Use at your own risk.  
+*IMPORTANT*: this is an _experimental_ version. Use at your own risk.  
 
-*WARNING*: it was never tested for anything other than Chia _quality check_ and _full proof_
+*IMPORTANT*: This has only been tested for Chia _quality check_ and _full proof_ and nothing else
 
-*WARNING*: cache eviction is not implemented!
+*NOTE*: cache eviction is not implemented!
 
 
 ## Challenge
 
-Passing the Chia _quality check_ within recommended 5s is easy, but that's just ~7 seeks.  
-The real issue with harvesting Chia plots in the cloud is _full proof_, which is ~64 seeks, and this happens after the _quality check_ completes and must be completed and propagated in the Chia distributed network before the 30s timeout.
+Passing the Chia _quality check_ within recommended 5s is easy, because this check involves doing ~7 seeks.  
+The real issue with farming Chia plots in the cloud is doing the _full proof_, which is ~64 seeks, and this happens after the _quality check_ completes and must be completed and propagated in the Chia distributed network before the 30s timeout.
 
 Those 7+64 seeks, in Chia 1.1.5, happen sequentially, which with variable latency can lead to enormous _full proof_ durations (>1min/proof is not unheard of)
 
@@ -24,29 +24,28 @@ Reads done by the _quality check_ can be reused to do a subsequent _full proof_,
 ### prefetch
 
 Chia reads are between 8 and 16KB and they usually happen in two subsequent `read()` calls.  
-It's ~50ms faster to get the entire 16KB within one request to B2. It is suspected that this gain is so small, because server has some cache of its own (small subsequent reads _are_ faster than random reads). `50ms*64 = 3.2s`
+It's ~50ms faster to get the entire 16KB within one request to Backblaze B2. It is suspected that this gain is so small, because server has some cache of its own (small subsequent reads _are_ faster than random reads). `50ms*64 = 3.2s`
 
 ### parallelization
 
 Chia 1.1.5 uses `chiapos` which runs all read requests in sequence, but community [provided](https://www.google.com) [PRs](https://www.google.com) which parallelize the reads. This lets us reduce the full proof cost from total duration of 64 sequential reads over the network down to ~7 (and the first one can be cached, too)
 
-### fast B2 cluster
+### Storage Perfomance
 
-B2 currently has 4 clusters. Performance of one cluster may be different from performance of another cluster.
+Storage performance may impact your results. Feel free to contact Backblaze B2 support if you notice performance issues.
 
 ### fast connection to B2
 
-The harvester machine needs to be as close as possible (network-wise) to the B2 cluster which hosts our account
+Having the harvester machine as close as possible (network-wise) to the Backblaze B2 region which hosts our account may help with performance.
 
 ## Installation
 
 NOTE: the following installation instruction is not very secure (it doesn't use checksums to verify integrity of PRs)
 
-In order to make _full proof_ verification viable on B2, we need the harvester to have a few things:
-1. FUSE driver to interface harvester with plots stored in a B2 bucket (it also has cache and takes care of the prefetch)
+In order to make _full proof_ verification viable on Backblaze B2, we need the harvester to have a few things:
+1. FUSE driver to interface harvester with plots stored in a Backblaze B2 bucket (it also has cache and takes care of the prefetch)
 2. Modified chiapos to parallelize the full proof reads
-3. Fast B2 cluster - currently accounts are assigned to cluster 000. You'd need to talk to B2 support to get an account 001 or 002
-4. Fast connection to B2 - depends on where your cluster is. It's way easier to move harvester to cluster, than to move cluster to harvester!
+3. Fast connection to Backblaze B2 - depends on which region your account is in. It's way easier to move harvester to region, than to move region to harvester!
 
 ### Installation of b2fs4chia FUSE driver
 
