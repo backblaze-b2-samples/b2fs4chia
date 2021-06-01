@@ -9,8 +9,8 @@
 
 ## Challenge
 
-Passing chia _quality check_ within recommended 5s is easy, but that's just ~7 seeks.  
-The real issue with harvesting Chia plots in the cloud is _full proof_, which is ~64 seeks, happens after the _quality check_ and must be completed and propagated in the Chia distributed network before a 30s timeout.
+Passing the Chia _quality check_ within recommended 5s is easy, but that's just ~7 seeks.  
+The real issue with harvesting Chia plots in the cloud is _full proof_, which is ~64 seeks, and this happens after the _quality check_ completes and must be completed and propagated in the Chia distributed network before the 30s timeout.
 
 Those 7+64 seeks, in Chia 1.1.5, happen sequentially, which with variable latency can lead to enormous _full proof_ durations (>1min/proof is not unheard of)
 
