@@ -31,7 +31,7 @@ def read(fname):
 
 setup(
     name='b2fs4chia',
-    version='0.1.4',
+    version='0.1.5',
     description="FUSE integration for Backblaze B2 Cloud storage",
     long_description=read('README.md'),
     classifiers=[
@@ -44,7 +44,7 @@ setup(
     keywords='',
     author='Backblaze',
     packages=find_packages(),
-    install_requires=['b2==1.1.0', 'fusepy==2.0.4', 'PyYAML==5.1'],
+    install_requires=['b2sdk==1.8.0', 'intervaltree==3.1.0', 'fusepy==2.0.4', 'PyYAML==5.4'],
     include_package_data=True,
     zip_safe=True,
     entry_points={
