@@ -36,8 +36,6 @@ MIN_READ_LEN_WITHOUT_CACHE = 16384
 class DataCache:
 
     def __init__(self, b2_file):
-        self.last_eviction = 0
-        self.eviction_interval = 10
         self.b2_file = b2_file
         self.lock = threading.Lock()
         self.perm = IntervalTree()
