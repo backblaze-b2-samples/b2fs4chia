@@ -12,7 +12,7 @@
 Passing the Chia _quality check_ within recommended 5s is easy, because this check involves doing ~7 seeks.  
 The real issue with farming Chia plots in the cloud is doing the _full proof_, which is ~64 seeks, and this happens after the _quality check_ completes and must be completed and propagated in the Chia distributed network before the 30s timeout.
 
-Those 7+64 seeks, in Chia 1.1.5, happen sequentially, which with variable latency can lead to enormous _full proof_ durations (>1min/proof is not unheard of)
+Those 7+64 seeks, in Chia 1.1.6, happen sequentially, which with variable latency can lead to enormous _full proof_ durations (>1min/proof is not unheard of)
 
 
 ## Factors impacting speed
@@ -28,7 +28,7 @@ It's ~50ms faster to get the entire 16KB within one request to Backblaze B2. It 
 
 ### parallelization
 
-Chia 1.1.5 uses `chiapos` which runs all read requests in sequence, but community [provided](https://www.google.com) [PRs](https://www.google.com) which parallelize the reads. This lets us reduce the full proof cost from total duration of 64 sequential reads over the network down to ~7 (and the first one can be cached, too)
+Chia 1.1.6 uses `chiapos` 1.0.2 which runs all read requests in sequence, but community [provided](https://www.google.com) [PRs](https://www.google.com) which can parallelize those reads. This lets us reduce the full proof cost from total duration of 64 sequential reads over the network down to ~7 (and the first one can be cached, too)
 
 ### Storage Perfomance
 
@@ -49,7 +49,7 @@ In order to make _full proof_ verification viable on Backblaze B2, we need the h
 
 ### Installation of b2fs4chia FUSE driver
 
-Clone this repository (`git clone ...`)
+Clone this repository (`git clone git@github.com:Backblaze-B2-Samples/b2fs4chia.git`), then install it
 ```
 cd b2fs4chia
 pip3 install .
@@ -70,14 +70,10 @@ source ~/chia/bin/activate
 install a released version of chia-blockchain
 
 ```
-pip install chia-blockchain==1.1.5
+pip install chia-blockchain==1.1.6
 ```
 
-if this fails try
-
-```
-pip install pip --upgrade
-```
+if this fails try `pip install pip --upgrade` first.
 
 #### Installation of modified chiapos
 
@@ -100,9 +96,9 @@ Next, checkout `chiapos` repo and install a patched version of it.
 git clone https://github.com/Chia-Network/chiapos.git
 cd chiapos
 git fetch origin pull/239/head:pr239
-git checkout 1.0.1
+git checkout 1.0.2
 git cherry-pick pr239
-python setup.py develop  # this step requires cmake > 3.14.0 and python3 headers (sudo apt-get install python3-dev on debian-like distros)
+python setup.py develop  # this step requires cmake > 3.14.0 and python3 headers (`sudo apt-get install python3-dev` on debian-like distros)
 ```
 
 ## Configuration
@@ -115,13 +111,13 @@ accountId: <youraccountid>
 applicationKey: <yourapplicationid>
 bucketId: <yourbucketid>
 ```
-to get `bucketId` you can use `b2 get-bucket <bucketname>` from B2 command line tool.
+to get `bucketId` you can go to you cango to the Backblaze web panel. You can also use `b2 get-bucket <bucketname>` from B2 command line tool (in case you don't have access to the account via web admin panel, but you just have a key).
 
 ## Running
 
 ```
-mkdir /tmp/fuse
-b2fs4chia /tmp/fuse --cache_timeout 3600
+mkdir /mnt/b2fs4chia
+b2fs4chia /mnt/b2fs4chia --cache_timeout 3600
 ```
 
 ### Testing
@@ -134,7 +130,7 @@ source ~/chia/bin/activate
 
 ```
 chia init  # this is only required when running chia for the first time. Output may conatain other commands to perform
-chia plots add -d /tmp/fuse
+chia plots add -d /mnt/b2fs4chia
 time chia plots check -n 5 -g "FULL-PLOT-FILE-NAME.plot"  # just the name, not the path
 ```
 note the number of proofs and the time it took to fetch them
