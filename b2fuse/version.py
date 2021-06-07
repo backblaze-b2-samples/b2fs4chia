@@ -1,7 +1,6 @@
 # The MIT License (MIT)
 
 # Copyright 2021 Backblaze Inc. All Rights Reserved.
-# Copyright (c) 2015 Sondre Engebraaten
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,34 +20,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import os
-from setuptools import setup, find_packages
 
+import sys
 
-def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+from importlib.metadata import version
 
+VERSION = version('b2fs4chia')
 
-setup(
-    name='b2fs4chia',
-    setup_requires=['setuptools_scm'],
-    use_scm_version=True,
-    description="FUSE integration for Backblaze B2 Cloud storage",
-    long_description=read('README.md'),
-    classifiers=[
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
-    ],
-    keywords='',
-    author='Backblaze',
-    packages=find_packages(),
-    install_requires=['b2sdk==1.8.0', 'intervaltree==3.1.0', 'fusepy==2.0.4', 'PyYAML==5.4'],
-    include_package_data=True,
-    zip_safe=True,
-    entry_points={
-        'console_scripts': ['b2fs4chia = b2fuse.b2fuse:main',],
-    }
-)
+PYTHON_VERSION = '.'.join(map(str, sys.version_info[:3]))  # something like: 3.9.1

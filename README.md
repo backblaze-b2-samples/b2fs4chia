@@ -4,9 +4,6 @@
 
 *IMPORTANT*: This has only been tested for Chia _quality check_ and _full proof_ and nothing else
 
-*NOTE*: cache eviction is not implemented!
-
-
 ## Challenge
 
 Passing the Chia _quality check_ within recommended 5s is easy, because this check involves doing ~7 seeks.  

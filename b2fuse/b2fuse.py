@@ -28,13 +28,14 @@ import yaml
 from fuse import FUSE
 
 from .b2fuse_main import B2Fuse
+from .version import VERSION
 
 
 def create_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("mountpoint", type=str, help="Mountpoint for the B2 bucket")
 
-    parser.add_argument('--version', action='version', version="b2fs4chia version 0.1")
+    parser.add_argument('--version', action='version', version=f"b2fs4chia version {VERSION}")
 
     parser.add_argument('--debug', dest='debug', action='store_true')
     parser.set_defaults(debug=False)
