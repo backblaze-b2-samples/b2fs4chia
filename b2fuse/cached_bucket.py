@@ -80,13 +80,18 @@ class CachedBucket(Bucket):
 
         raise CacheNotFound()
 
-    def ls(self):
+    def ls(self, folder_to_list='', show_versions=False, recursive=False, fetch_count=10000):
         func_name = "ls"
 
         try:
             return self._get_cache(func_name)
         except CacheNotFound:
-            result = list(super(CachedBucket, self).ls())
+            result = list(super(CachedBucket, self).ls(
+                folder_to_list=folder_to_list,
+                show_versions=show_versions,
+                recursive=recursive,
+                fetch_count=fetch_count,
+            ))
             return self._update_cache(func_name, result)
 
     def delete_file_version(self, *args, **kwargs):

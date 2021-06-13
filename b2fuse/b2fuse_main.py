@@ -136,7 +136,7 @@ class B2Fuse(Operations):
 
         online_files = [
             build_file_info_dict(file_info_object)
-            for file_info_object, _ in self.bucket_api.ls()
+            for file_info_object, _ in self.bucket_api.ls(recursive=True)
         ]
         self._directories.update_structure(online_files, self.local_directories)
 
