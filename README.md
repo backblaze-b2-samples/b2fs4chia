@@ -67,35 +67,11 @@ source ~/chia/bin/activate
 install a released version of chia-blockchain
 
 ```
-pip install chia-blockchain==1.1.6
+pip install chia-blockchain==1.2.0
 ```
 
 if this fails try `pip install pip --upgrade` first.
 
-#### Installation of modified chiapos
-
-First, remove `chiapos` installed by `chia-blockchain`:
-
-```
-pip uninstall chiapos
-```
-
-You can make sure that worked by doing:
-```
-python -c 'import chiapos'
-```
-
-You should get a `ModuleNotFound` error.
-
-Next, checkout `chiapos` repo and install a patched version of it.
-
-```
-git clone https://github.com/Chia-Network/chiapos.git
-cd chiapos
-git fetch origin pull/239/head:pr239
-git checkout 1.0.2
-git cherry-pick pr239
-python setup.py develop  # this step requires cmake > 3.14.0 and python3 headers (`sudo apt-get install python3-dev` on debian-like distros)
 ```
 
 ## Configuration
