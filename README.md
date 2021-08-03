@@ -72,7 +72,6 @@ pip install chia-blockchain==1.2.0
 
 if this fails try `pip install pip --upgrade` first.
 
-```
 
 ## Configuration
 
