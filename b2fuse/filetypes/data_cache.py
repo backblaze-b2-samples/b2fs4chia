@@ -25,12 +25,22 @@ import time
 import threading
 from .evicted_interval_tree import EvictedIntervalTree
 
-from b2sdk.v0 import DownloadDestBytes
 from intervaltree import IntervalTree
 
 logger = logging.getLogger(__name__)
 
 MIN_READ_LEN_WITHOUT_CACHE = 16384
+
+
+class BytesDestination(object):
+    def __init__(self):
+        self._buffer = bytearray()
+
+    def write(self, data):
+        self._buffer.extend(data)
+
+    def get_bytes_written(self):
+        return bytes(self._buffer)
 
 
 class DataCache:
@@ -43,11 +53,11 @@ class DataCache:
         self.parallel_counter = 0
 
     def _fetch_data(self, offset, length, keep_it):
-        download_dest = DownloadDestBytes()
+        download_dest = BytesDestination()
         self.parallel_counter += 1
         start = time.time()
-        self.b2_file.b2fuse.bucket_api.download_file_by_id(
-            self.b2_file.file_info['fileId'],
+        self.b2_file.b2fuse.bucket_api.download_key(
+            self.b2_file.file_info['fileName'],
             download_dest,
             range_=(
                 offset,

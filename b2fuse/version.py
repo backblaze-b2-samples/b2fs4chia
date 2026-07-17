@@ -23,8 +23,11 @@
 
 import sys
 
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError, version
 
-VERSION = version('b2fs4chia')
+try:
+    VERSION = version('b2fs4chia')
+except PackageNotFoundError:
+    VERSION = '0+unknown'
 
 PYTHON_VERSION = '.'.join(map(str, sys.version_info[:3]))  # something like: 3.9.1
