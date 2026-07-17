@@ -26,7 +26,8 @@ import unittest
 import os
 import shutil
 from fuse import FUSE
-from .b2fuse import load_config, B2Fuse
+from .b2fuse import load_config
+from .b2fuse_main import B2Fuse
 
 
 def init_b2fuse():
@@ -35,13 +36,11 @@ def init_b2fuse():
     os.makedirs("mountpoint")
 
     filesystem = B2Fuse(
-        config["accountId"],
-        config["applicationKey"],
-        config["bucketId"],
-        config["enableHashfiles"],
-        config["memoryLimit"],
-        config["tempFolder"],
-        config["useDisk"],
+        config["B2_APPLICATION_KEY_ID"],
+        config["B2_APPLICATION_KEY"],
+        config["B2_BUCKET_NAME"],
+        config["B2_REGION"],
+        config["cacheTimeout"],
     )
 
     fuse = FUSE(filesystem, "mountpoint", nothreads=True, foreground=False)

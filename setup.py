@@ -45,7 +45,7 @@ setup(
     keywords='',
     author='Backblaze',
     packages=find_packages(),
-    install_requires=['b2sdk==1.8.0', 'intervaltree==3.1.0', 'fusepy==2.0.4', 'PyYAML==5.4'],
+    install_requires=['boto3>=1.34,<2.0', 'intervaltree==3.1.0', 'fusepy==2.0.4', 'PyYAML>=6.0,<7.0'],
     include_package_data=True,
     zip_safe=True,
     entry_points={

@@ -31,26 +31,39 @@ from stat import S_IFDIR, S_IFREG
 from time import time, sleep
 from typing import Set
 
-from b2sdk.v0 import InMemoryAccountInfo
-from b2sdk.v0 import B2Api, B2RawApi, B2Http
+import boto3
+from botocore.config import Config
 
 from .filetypes.B2SequentialFileMemory import B2SequentialFileMemory
 from .directory_structure import DirectoryStructure
 from .cached_bucket import CachedBucket
 
 
+def s3_endpoint_url(region):
+    return 'https://s3.%s.backblazeb2.com' % region
+
+
 class B2Fuse(Operations):
     def __init__(
             self,
-            account_id,
+            application_key_id,
             application_key,
-            bucket_id,
+            bucket_name,
+            region,
             cache_timeout,
     ):
-        account_info = InMemoryAccountInfo()
-        self.api = B2Api(account_info, raw_api=B2RawApi(B2Http(user_agent_append='b2fs4chia')))
-        self.api.authorize_account('production', account_id, application_key)
-        self.bucket_api = CachedBucket(self.api, bucket_id, cache_timeout)
+        self.s3_client = boto3.client(
+            's3',
+            endpoint_url=s3_endpoint_url(region),
+            region_name=region,
+            aws_access_key_id=application_key_id,
+            aws_secret_access_key=application_key,
+            config=Config(
+                signature_version='s3v4',
+                user_agent_extra='b2fs4chia (backblaze-b2-samples)',
+            ),
+        )
+        self.bucket_api = CachedBucket(self.s3_client, bucket_name, cache_timeout)
 
         self.logger = logging.getLogger("%s.%s" % (__name__, self.__class__.__name__))
 
@@ -65,7 +78,7 @@ class B2Fuse(Operations):
         self.recently_open_files_lock = threading.Lock()
 
         self.fd = 0
-        threading.Thread(target=self.evict_periodically).start()
+        threading.Thread(target=self.evict_periodically, daemon=True).start()
 
     def evict_periodically(self):
         while True:

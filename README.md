@@ -75,15 +75,32 @@ if this fails try `pip install pip --upgrade` first.
 
 ## Configuration
 
-You will need a `config.yaml` file in the folder where you run the fuse driver.
-An example config ("config.yaml"):
+`b2fs4chia` connects to Backblaze B2 through the S3-compatible API. Configure it
+with the standard Backblaze sample environment variables, or put the same keys in
+a `config.yaml` file in the folder where you run the FUSE driver.
+
+An example environment file is provided in `.env.example`:
 
 ```
-accountId: <youraccountid>
-applicationKey: <yourapplicationid>
-bucketId: <yourbucketid>
+B2_APPLICATION_KEY_ID=
+B2_APPLICATION_KEY=
+B2_BUCKET_NAME=
+B2_REGION=
+B2_PUBLIC_URL_BASE=
 ```
-to get `bucketId` you can go to you cango to the Backblaze web panel. You can also use `b2 get-bucket <bucketname>` from B2 command line tool (in case you don't have access to the account via web admin panel, but you just have a key).
+
+An example `config.yaml`:
+
+```
+B2_APPLICATION_KEY_ID: <your-application-key-id>
+B2_APPLICATION_KEY: <your-application-key>
+B2_BUCKET_NAME: <your-bucket-name>
+B2_REGION: <your-b2-region>
+B2_PUBLIC_URL_BASE: <your-public-url-base>
+```
+
+Use the bucket name, not the bucket ID. The S3 endpoint is derived from
+`B2_REGION`.
 
 ## Running
 

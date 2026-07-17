@@ -21,11 +21,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import datetime
 import logging
 
 from time import time
-
-from b2sdk.v0 import Bucket
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +54,32 @@ class CacheNotFound(BaseException):
     pass
 
 
-class CachedBucket(Bucket):
-    def __init__(self, api, bucket_id, timeout=120):
-        super(CachedBucket, self).__init__(api, bucket_id)
+class S3FileInfo(object):
+    def __init__(self, object_summary):
+        self.file_name = object_summary['Key']
+        self.content_sha1 = object_summary.get('ETag', '').strip('"')
+        self.size = object_summary['Size']
+        self.upload_timestamp = self._timestamp_ms(object_summary['LastModified'])
+
+    def as_dict(self):
+        return {
+            'fileId': self.file_name,
+            'fileName': self.file_name,
+            'size': self.size,
+            'uploadTimestamp': self.upload_timestamp,
+        }
+
+    @staticmethod
+    def _timestamp_ms(value):
+        if isinstance(value, datetime.datetime):
+            return int(value.timestamp() * 1000)
+        return int(value)
+
+
+class CachedBucket(object):
+    def __init__(self, s3_client, bucket_name, timeout=120):
+        self.s3_client = s3_client
+        self.bucket_name = bucket_name
 
         self._cache = {}
 
@@ -82,20 +104,36 @@ class CachedBucket(Bucket):
 
     def ls(self, folder_to_list='', show_versions=False, recursive=False, fetch_count=10000):
         func_name = "ls"
+        cache_params = (folder_to_list, show_versions, recursive, fetch_count)
 
         try:
-            return self._get_cache(func_name)
+            return self._get_cache(func_name, cache_params)
         except CacheNotFound:
-            result = list(super(CachedBucket, self).ls(
-                folder_to_list=folder_to_list,
-                show_versions=show_versions,
-                recursive=recursive,
-                fetch_count=fetch_count,
-            ))
-            return self._update_cache(func_name, result)
+            paginator = self.s3_client.get_paginator('list_objects_v2')
+            page_iterator = paginator.paginate(
+                Bucket=self.bucket_name,
+                Prefix=folder_to_list,
+                PaginationConfig={'PageSize': fetch_count},
+            )
+            result = []
+            for page in page_iterator:
+                for object_summary in page.get('Contents', []):
+                    result.append((S3FileInfo(object_summary), None))
+            return self._update_cache(func_name, result, cache_params)
 
-    def delete_file_version(self, *args, **kwargs):
-        raise NotImplementedError
+    def download_file_by_id(self, file_id, destination, range_=None):
+        request = {
+            'Bucket': self.bucket_name,
+            'Key': file_id,
+        }
+        if range_:
+            request['Range'] = 'bytes=%s-%s' % (range_[0], range_[1])
+        response = self.s3_client.get_object(**request)
+        destination.write(response['Body'].read())
+
+    def delete_file_version(self, file_id, file_name):
+        self.s3_client.delete_object(Bucket=self.bucket_name, Key=file_name)
+        self._reset_cache()
 
     def upload_bytes(self, *args, **kwargs):
         raise NotImplementedError
