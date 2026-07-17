@@ -56,8 +56,8 @@ class DataCache:
         download_dest = BytesDestination()
         self.parallel_counter += 1
         start = time.time()
-        self.b2_file.b2fuse.bucket_api.download_file_by_id(
-            self.b2_file.file_info['fileId'],
+        self.b2_file.b2fuse.bucket_api.download_key(
+            self.b2_file.file_info['fileName'],
             download_dest,
             range_=(
                 offset,

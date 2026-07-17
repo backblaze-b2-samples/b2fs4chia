@@ -26,7 +26,7 @@ import unittest
 import os
 import shutil
 from fuse import FUSE
-from .b2fuse import load_config
+from .b2fuse import B2_APPLICATION_KEY, B2_APPLICATION_KEY_ID, B2_BUCKET_NAME, B2_REGION, load_config
 from .b2fuse_main import B2Fuse
 
 
@@ -36,10 +36,10 @@ def init_b2fuse():
     os.makedirs("mountpoint")
 
     filesystem = B2Fuse(
-        config["B2_APPLICATION_KEY_ID"],
-        config["B2_APPLICATION_KEY"],
-        config["B2_BUCKET_NAME"],
-        config["B2_REGION"],
+        config[B2_APPLICATION_KEY_ID],
+        config[B2_APPLICATION_KEY],
+        config[B2_BUCKET_NAME],
+        config[B2_REGION],
         config["cacheTimeout"],
     )
 

@@ -49,7 +49,8 @@ In order to make _full proof_ verification viable on Backblaze B2, we need the h
 Clone this repository (`git clone git@github.com:Backblaze-B2-Samples/b2fs4chia.git`), then install it
 ```
 cd b2fs4chia
-pip3 install .
+pip3 install --require-hashes -r requirements.txt
+pip3 install --no-deps .
 ```
 Optionally you can use a `venv` to install *b2fs4chia* separately from other python packages.
 
@@ -100,7 +101,32 @@ B2_PUBLIC_URL_BASE: <your-public-url-base>
 ```
 
 Use the bucket name, not the bucket ID. The S3 endpoint is derived from
-`B2_REGION`.
+`B2_REGION`. `B2_PUBLIC_URL_BASE` is optional; when provided, listed object
+metadata includes a `publicUrl` value. Reads still use signed S3 requests.
+
+### Migrating from the legacy config
+
+Previous versions used `accountId`, `applicationKey`, and `bucketId` in
+`config.yaml`, plus `--account_id` and `--bucket_id` CLI flags. This
+S3-compatible version accepts those names as deprecated aliases, but S3 access
+requires a bucket name and region.
+
+For a rolling deploy, first expand the manifest so old and new keys are present:
+
+```
+accountId: <legacy-application-key-id>
+applicationKey: <legacy-application-key>
+bucketId: <legacy-bucket-id>
+B2_APPLICATION_KEY_ID: <your-application-key-id>
+B2_APPLICATION_KEY: <your-application-key>
+B2_BUCKET_NAME: <your-bucket-name>
+B2_REGION: <your-b2-region>
+B2_PUBLIC_URL_BASE: <your-public-url-base>
+```
+
+Old processes continue to read the legacy keys. New processes read the
+standard `B2_*` keys. After all nodes run the S3-compatible version, contract
+the manifest by removing `accountId`, `applicationKey`, and `bucketId`.
 
 ## Running
 

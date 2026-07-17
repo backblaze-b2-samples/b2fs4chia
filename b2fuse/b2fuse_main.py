@@ -32,15 +32,11 @@ from time import time, sleep
 from typing import Set
 
 import boto3
-from botocore.config import Config
 
 from .filetypes.B2SequentialFileMemory import B2SequentialFileMemory
 from .directory_structure import DirectoryStructure
 from .cached_bucket import CachedBucket
-
-
-def s3_endpoint_url(region):
-    return 'https://s3.%s.backblazeb2.com' % region
+from .s3_config import s3_client_config, s3_endpoint_url
 
 
 class B2Fuse(Operations):
@@ -51,6 +47,7 @@ class B2Fuse(Operations):
             bucket_name,
             region,
             cache_timeout,
+            public_url_base=None,
     ):
         self.s3_client = boto3.client(
             's3',
@@ -58,12 +55,9 @@ class B2Fuse(Operations):
             region_name=region,
             aws_access_key_id=application_key_id,
             aws_secret_access_key=application_key,
-            config=Config(
-                signature_version='s3v4',
-                user_agent_extra='b2fs4chia (backblaze-b2-samples)',
-            ),
+            config=s3_client_config(),
         )
-        self.bucket_api = CachedBucket(self.s3_client, bucket_name, cache_timeout)
+        self.bucket_api = CachedBucket(self.s3_client, bucket_name, cache_timeout, public_url_base)
 
         self.logger = logging.getLogger("%s.%s" % (__name__, self.__class__.__name__))
 
@@ -143,9 +137,7 @@ class B2Fuse(Operations):
     def _update_directory_structure(self):
         # Update the directory structure with online files and local directories
         def build_file_info_dict(file_info_object):
-            file_info = file_info_object.as_dict()
-            file_info["contentSha1"] = file_info_object.content_sha1
-            return file_info
+            return file_info_object.as_dict()
 
         online_files = [
             build_file_info_dict(file_info_object)
@@ -159,7 +151,7 @@ class B2Fuse(Operations):
             del self.open_files[path]
         elif delete_online:
             file_info = self._directories.get_file_info(path)
-            self.bucket_api.delete_file_version(file_info['fileId'], file_info['fileName'])
+            self.bucket_api.delete_key(file_info['fileName'])
 
     def _remove_start_slash(self, path):
         if path.startswith("/"):
