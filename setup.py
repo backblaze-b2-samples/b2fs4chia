@@ -37,7 +37,6 @@ setup(
     long_description=read('README.md'),
     classifiers=[
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
@@ -45,6 +44,7 @@ setup(
     keywords='',
     author='Backblaze',
     packages=find_packages(),
+    python_requires='>=3.7',
     install_requires=['b2sdk>=1.14.1,<2.0.0', 'intervaltree==3.1.0', 'fusepy==2.0.4', 'PyYAML==5.4'],
     include_package_data=True,
     zip_safe=True,
